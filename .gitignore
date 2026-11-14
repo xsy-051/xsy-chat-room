@@ -1,0 +1,28 @@
+# Python 虚拟环境与本地产物
+.venv/
+venv/
+env/
+
+# Python 字节码与缓存
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 运行日志（可能包含本机 IP、昵称等本地信息）
+*.log
+server.log
+
+# 环境变量与本地密钥
+.env
+.env.*
+!.env.example
+
+# 编辑器与系统文件
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
