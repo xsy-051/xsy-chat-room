@@ -15,6 +15,12 @@ __pycache__/
 *.log
 server.log
 
+# SQLite 运行数据库
+*.db
+*.db-wal
+*.db-shm
+chat.db-journal
+
 # 环境变量与本地密钥
 .env
 .env.*

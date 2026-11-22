@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#07c160">
+  <meta name="application-name" content="局域网聊天室">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="局域网聊天">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%2307c160'/%3E%3Cpath d='M17 22.5c0-5.2 4.8-9.5 10.8-9.5h8.4c6 0 10.8 4.3 10.8 9.5s-4.8 9.5-10.8 9.5h-2.5l-5.8 4.2.8-5.2C22.3 29.9 17 26.7 17 22.5Z' fill='white'/%3E%3Ccircle cx='27' cy='22.5' r='2' fill='%2307c160'/%3E%3Ccircle cx='37' cy='22.5' r='2' fill='%2307c160'/%3E%3C/svg%3E">
   <title>局域网聊天室</title>
   <style>
@@ -798,6 +804,45 @@
       box-shadow: 0 4px 12px rgba(83, 174, 53, 0.11);
     }
 
+    .msg-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin: 5px 3px 0;
+    }
+
+    .recall-button,
+    .edit-button {
+      padding: 2px 5px;
+      color: #98a3ae;
+      font-size: 10px;
+      line-height: 1.5;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      transition: color 0.16s ease, background 0.16s ease;
+    }
+
+    .recall-button:hover:not(:disabled),
+    .edit-button:hover:not(:disabled) {
+      color: #c44747;
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .edit-button:hover:not(:disabled) {
+      color: #087c48;
+    }
+
+    .recall-button:disabled,
+    .edit-button:disabled {
+      color: #b5bdc5;
+    }
+
+    .system-pill.is-recall {
+      color: #9ca5af;
+      background: rgba(255, 255, 255, 0.52);
+    }
+
     .system-row {
       display: flex;
       flex: 0 0 auto;
@@ -933,6 +978,12 @@
       height: 15px;
     }
 
+    .msg-edited {
+      flex: 0 0 auto;
+      color: #a4adb7;
+      font-size: 9px;
+    }
+
     .composer-hint {
       display: flex;
       align-items: center;
@@ -971,7 +1022,9 @@
 
     .modal-card {
       width: min(424px, 100%);
+      max-height: calc(100dvh - 32px);
       padding: 30px 30px 25px;
+      overflow-y: auto;
       background:
         radial-gradient(circle at 100% 0%, rgba(7, 193, 96, 0.07), transparent 30%),
         #fff;
@@ -1031,6 +1084,63 @@
       color: #53606e;
       font-size: 11px;
       font-weight: 700;
+    }
+
+    .room-field {
+      margin-bottom: 15px;
+    }
+
+    .room-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .room-option {
+      position: relative;
+      display: block;
+      cursor: pointer;
+    }
+
+    .room-option input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .room-option span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      height: 43px;
+      color: #697581;
+      font-size: 12px;
+      font-weight: 700;
+      background: #f7f9f8;
+      border: 1px solid #e3e9e5;
+      border-radius: 12px;
+      transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .room-option span svg {
+      width: 15px;
+      height: 15px;
+      opacity: 0.7;
+    }
+
+    .room-option input:checked + span {
+      color: #067a43;
+      background: #edfaf2;
+      border-color: rgba(7, 193, 96, 0.48);
+      box-shadow: 0 0 0 3px rgba(7, 193, 96, 0.07);
+    }
+
+    .room-option input:focus-visible + span {
+      outline: 2px solid rgba(7, 193, 96, 0.45);
+      outline-offset: 2px;
     }
 
     .nickname-wrap {
@@ -1433,7 +1543,7 @@
           <span class="room-tag"><span class="live-dot"></span>实时房间</span>
           <span aria-hidden="true">✦</span>
         </div>
-        <h2>局域网大厅</h2>
+        <h2 id="roomNameSidebar">房间1</h2>
         <p>同一个 WiFi 下，消息即时抵达。</p>
         <div class="room-stats">
           <span><strong id="sideOnlineCount">0</strong>人在线</span>
@@ -1471,7 +1581,7 @@
           </div>
           <span class="me-badge">我</span>
         </div>
-        <div class="footer-note">消息保存在服务端内存中，仅保留最近 50 条</div>
+        <div class="footer-note">消息持久化到 SQLite · 每个房间独立</div>
       </div>
     </aside>
 
@@ -1492,7 +1602,7 @@
           </svg>
         </div>
         <div class="room-title">
-          <h1>局域网大厅</h1>
+          <h1 id="roomNameHeader">房间1</h1>
           <p id="headerSubtitle">轻松聊天，消息实时同步</p>
         </div>
         <div class="status" id="chatStatus" data-state="waiting" role="status" aria-live="polite">
@@ -1528,7 +1638,7 @@
           <div class="empty-tips">
             <span>Enter 发送</span>
             <span>Shift + Enter 换行</span>
-            <span>最近 50 条自动同步</span>
+            <span>断线消息自动补发</span>
           </div>
         </div>
       </section>
@@ -1569,6 +1679,29 @@
       <p>给自己起个昵称，让同一个房间里的人认出你。</p>
 
       <form id="nicknameForm" novalidate>
+        <div class="room-field">
+          <div class="field-label">选择房间</div>
+          <div class="room-selector" role="radiogroup" aria-label="选择房间">
+            <label class="room-option">
+              <input type="radio" name="room" value="room1" checked>
+              <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z"/>
+                </svg>
+                房间1
+              </span>
+            </label>
+            <label class="room-option">
+              <input type="radio" name="room" value="room2">
+              <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z"/>
+                </svg>
+                房间2
+              </span>
+            </label>
+          </div>
+        </div>
         <label class="field-label" for="nicknameInput">你的昵称</label>
         <div class="nickname-wrap">
           <span class="at-sign" aria-hidden="true">@</span>
@@ -1588,7 +1721,7 @@
           <rect x="4" y="10" width="16" height="11" rx="3"/>
           <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
         </svg>
-        同一 IP 的多个窗口只计算 1 个在线人数
+        每个房间相互隔离 · 同一 IP 多窗口只计 1 人
       </div>
     </div>
   </div>
@@ -1602,7 +1735,14 @@
       const MAX_MESSAGE_LENGTH = 200;
       const MAX_NAME_LENGTH = 16;
       const NAME_STORAGE_KEY = "lan-chat:nickname";
-      const CLIENT_ID_STORAGE_KEY = "lan-chat:client-id";
+      const ROOM_STORAGE_KEY = "lan-chat:room";
+      const LAST_MSG_STORAGE_PREFIX = "lan-chat:last-msg:";
+      const DEFAULT_ROOM = "room1";
+      const ROOM_NAMES = Object.freeze({
+        room1: "房间1",
+        room2: "房间2"
+      });
+      const DEFAULT_RECALL_WINDOW_MS = 2 * 60 * 1000;
       const RECONNECT_BASE_DELAY = 1000;
       const RECONNECT_MAX_DELAY = 10000;
 
@@ -1640,6 +1780,9 @@
         selfName: document.getElementById("selfName"),
         selfIp: document.getElementById("selfIp"),
         footerIp: document.getElementById("footerIp"),
+        roomNameSidebar: document.getElementById("roomNameSidebar"),
+        roomNameHeader: document.getElementById("roomNameHeader"),
+        roomInputs: document.querySelectorAll('input[name="room"]'),
         nicknameModal: document.getElementById("nicknameModal"),
         nicknameForm: document.getElementById("nicknameForm"),
         nicknameInput: document.getElementById("nicknameInput"),
@@ -1651,12 +1794,14 @@
       const state = {
         socket: null,
         nickname: "",
-        clientId: getOrCreateClientId(),
+        room: DEFAULT_ROOM,
+        roomName: ROOM_NAMES[DEFAULT_ROOM],
         connected: false,
         joinedReady: false,
         selfIp: "",
         users: [],
         onlineCount: 0,
+        recallWindowMs: DEFAULT_RECALL_WINDOW_MS,
         reconnectAttempts: 0,
         reconnectTimer: null,
         hasEverConnected: false,
@@ -1667,10 +1812,20 @@
       init();
 
       function init() {
+        state.room = readStoredRoom();
+        state.roomName = ROOM_NAMES[state.room];
+
+        const selectedRoomInput = document.querySelector(
+          `input[name="room"][value="${state.room}"]`
+        );
+        if (selectedRoomInput) selectedRoomInput.checked = true;
+
         applyAvatar(el.selfAvatar, "我");
         el.nicknameInput.value = readStoredName();
+        updateRoomLabels();
 
         bindEvents();
+        window.setInterval(updateRecallButtonExpiry, 1000);
         updateEmptyState();
         updateComposerAvailability();
         updateCharCount();
@@ -1685,6 +1840,15 @@
         el.nicknameForm.addEventListener("submit", handleNicknameSubmit);
         el.nicknameInput.addEventListener("input", () => {
           el.nicknameError.textContent = "";
+        });
+
+        el.roomInputs.forEach((input) => {
+          input.addEventListener("change", () => {
+            if (!input.checked || !ROOM_NAMES[input.value]) return;
+            state.room = input.value;
+            state.roomName = ROOM_NAMES[input.value];
+            updateRoomLabels();
+          });
         });
 
         el.messageInput.addEventListener("input", () => {
@@ -1753,6 +1917,14 @@
           return;
         }
 
+        const selectedRoomInput = document.querySelector('input[name="room"]:checked');
+        state.room = selectedRoomInput && ROOM_NAMES[selectedRoomInput.value]
+          ? selectedRoomInput.value
+          : DEFAULT_ROOM;
+        state.roomName = ROOM_NAMES[state.room];
+        storeRoom(state.room);
+        updateRoomLabels();
+
         state.nickname = name;
         storeName(name);
         el.nicknameModal.classList.add("is-hidden");
@@ -1777,7 +1949,8 @@
         }
 
         const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const url = `${scheme}//${window.location.host}/ws`;
+        const roomQuery = encodeURIComponent(state.room);
+        const url = `${scheme}//${window.location.host}/ws?room=${roomQuery}`;
         let socket;
 
         try {
@@ -1806,7 +1979,7 @@
             socket.send(JSON.stringify({
               type: "join",
               name: state.nickname,
-              clientId: state.clientId
+              last_msg_id: readLastMsgId(state.room)
             }));
           } catch (_) {
             socket.close();
@@ -1892,21 +2065,55 @@
           return;
         }
 
+        if (data.type === "recall") {
+          handleRecallEvent(data);
+          return;
+        }
+
+        if (data.type === "edited") {
+          handleEditedEvent(data);
+          return;
+        }
+
         if (data.type === "error") {
+          resetPendingRecallButtons();
           showToast(String(data.text || "操作失败"), "error");
         }
       }
 
       function handleInit(data) {
+        if (ROOM_NAMES[data.room]) {
+          state.room = data.room;
+          state.roomName = data.roomName || ROOM_NAMES[data.room];
+        }
+
         state.selfIp = typeof data.selfIp === "string" ? data.selfIp : "";
+        const recallWindow = Number(data.recallWindowMs);
+        state.recallWindowMs = Number.isFinite(recallWindow) && recallWindow > 0
+          ? recallWindow
+          : DEFAULT_RECALL_WINDOW_MS;
         state.joinedReady = true;
 
+        updateRoomLabels();
         updateSelfCard();
         renderOnlineUsers(data.users, data.onlineCount);
 
+        // 每次加入/重连都用服务端历史重建消息区，确保撤回后的消息不会残留。
+        clearChatView();
         const history = Array.isArray(data.history) ? data.history : [];
         for (const message of history) {
-          appendChatMessage(message, { scroll: false, animate: false });
+          appendChatMessage(message, {
+            scroll: false,
+            animate: false,
+            track: false
+          });
+        }
+
+        if (history.length > 0) {
+          const lastMessage = history[history.length - 1];
+          if (lastMessage && lastMessage.msg_id) {
+            storeLastMsgId(state.room, lastMessage.msg_id);
+          }
         }
 
         updateEmptyState();
@@ -1920,20 +2127,29 @@
 
       function appendChatMessage(message, options = {}) {
         if (!message || typeof message !== "object") return;
-        if (typeof message.id !== "string" || !message.id) return;
-        if (state.seenMessageIds.has(message.id)) return;
+
+        const msgId = typeof message.msg_id === "string" ? message.msg_id : "";
+        if (!msgId || state.seenMessageIds.has(msgId)) return;
 
         const text = typeof message.text === "string" ? message.text : "";
         if (!text) return;
 
-        state.seenMessageIds.add(message.id);
+        state.seenMessageIds.add(msgId);
 
-        const isMine = message.clientId === state.clientId;
-        const name = typeof message.name === "string" && message.name ? message.name : "匿名用户";
+        // 气泡方向严格由发送者 IP 决定，刷新后历史消息也能正确归位。
+        const isMine = Boolean(state.selfIp) && message.ip === state.selfIp;
+        const name = typeof message.name === "string" && message.name
+          ? message.name
+          : "匿名用户";
+        const rawCreatedAt = Number(message.created_at);
+        const createdAt = Number.isFinite(rawCreatedAt) && rawCreatedAt > 0
+          ? rawCreatedAt
+          : Date.now();
 
         const row = document.createElement("div");
         row.className = `msg-row ${isMine ? "mine" : "theirs"}${options.animate === false ? " no-animation" : ""}`;
-        row.dataset.messageId = message.id;
+        row.dataset.msgId = msgId;
+        row.dataset.createdAt = String(createdAt);
 
         const avatar = document.createElement("div");
         avatar.className = "avatar avatar-message";
@@ -1955,19 +2171,195 @@
 
         meta.append(nameNode, timeNode);
 
+        if (message.edited === true) {
+          const editedNode = document.createElement("span");
+          editedNode.className = "msg-edited";
+          editedNode.textContent = "已编辑";
+          meta.append(editedNode);
+        }
+
         const bubble = document.createElement("div");
         bubble.className = "bubble";
         bubble.textContent = text;
 
         content.append(meta, bubble);
+
+        if (isMine) {
+          const actions = document.createElement("div");
+          actions.className = "msg-actions";
+
+          const editButton = document.createElement("button");
+          editButton.type = "button";
+          editButton.className = "edit-button";
+          editButton.textContent = "编辑";
+          editButton.setAttribute("aria-label", "编辑这条消息");
+          editButton.addEventListener("click", () => {
+            requestEdit(msgId, bubble);
+          });
+          actions.append(editButton);
+
+          const expiresAt = createdAt + state.recallWindowMs;
+          if (expiresAt > Date.now()) {
+            const recallButton = document.createElement("button");
+            recallButton.type = "button";
+            recallButton.className = "recall-button";
+            recallButton.textContent = "撤回";
+            recallButton.dataset.expiresAt = String(expiresAt);
+            recallButton.setAttribute("aria-label", "撤回这条消息");
+            recallButton.addEventListener("click", () => {
+              requestRecall(msgId, recallButton);
+            });
+            actions.append(recallButton);
+          }
+
+          content.append(actions);
+        }
+
         row.append(avatar, content);
         el.messages.append(row);
+
+        if (options.track !== false) {
+          storeLastMsgId(state.room, msgId);
+        }
 
         updateEmptyState();
 
         if (options.scroll !== false) {
           scrollToBottom();
         }
+      }
+
+      function requestEdit(msgId, bubble) {
+        if (!state.connected || !state.joinedReady) {
+          showToast("连接已断开，暂时无法编辑。", "error");
+          return;
+        }
+
+        const socket = state.socket;
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          showToast("连接已断开，暂时无法编辑。", "error");
+          return;
+        }
+
+        const currentText = bubble.textContent || "";
+        const draft = window.prompt(`编辑消息（最多 ${MAX_MESSAGE_LENGTH} 字）`, currentText);
+        if (draft === null) return;
+
+        const text = draft.trim();
+        if (!text) {
+          showToast("消息不能为空。", "error");
+          return;
+        }
+        if (Array.from(text).length > MAX_MESSAGE_LENGTH) {
+          showToast(`消息不能超过 ${MAX_MESSAGE_LENGTH} 字。`, "error");
+          return;
+        }
+        if (text === currentText) return;
+
+        try {
+          socket.send(JSON.stringify({ type: "edit", msg_id: msgId, text }));
+        } catch (_) {
+          showToast("编辑失败，连接可能已断开。", "error");
+        }
+      }
+
+      function requestRecall(msgId, button) {
+        if (!state.connected || !state.joinedReady) {
+          showToast("连接已断开，暂时无法撤回。", "error");
+          return;
+        }
+
+        const socket = state.socket;
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          showToast("连接已断开，暂时无法撤回。", "error");
+          return;
+        }
+
+        if (button.disabled) return;
+        button.disabled = true;
+        button.textContent = "撤回中…";
+
+        try {
+          socket.send(JSON.stringify({ type: "recall", msg_id: msgId }));
+        } catch (_) {
+          resetPendingRecallButtons();
+          showToast("撤回失败，连接可能已断开。", "error");
+        }
+      }
+
+      function handleRecallEvent(data) {
+        const msgId = typeof data.msg_id === "string" ? data.msg_id : "";
+        if (!msgId) return;
+
+        const row = Array.from(el.messages.querySelectorAll(".msg-row"))
+          .find((item) => item.dataset.msgId === msgId);
+        if (!row) return;
+
+        const name = typeof data.name === "string" && data.name
+          ? data.name
+          : "某位成员";
+
+        const systemRow = document.createElement("div");
+        systemRow.className = "system-row";
+
+        const pill = document.createElement("div");
+        pill.className = "system-pill is-recall";
+        const clock = formatClock(data.time);
+        pill.textContent = clock
+          ? `${clock} · ${name}撤回了一条消息`
+          : `${name}撤回了一条消息`;
+        systemRow.append(pill);
+
+        row.replaceWith(systemRow);
+        updateEmptyState();
+      }
+
+      function handleEditedEvent(data) {
+        const msgId = typeof data.msg_id === "string" ? data.msg_id : "";
+        const text = typeof data.text === "string" ? data.text : "";
+        if (!msgId || !text) return;
+
+        const row = Array.from(el.messages.querySelectorAll(".msg-row"))
+          .find((item) => item.dataset.msgId === msgId);
+        if (!row) return;
+
+        const bubble = row.querySelector(".bubble");
+        if (bubble) bubble.textContent = text;
+
+        const meta = row.querySelector(".msg-meta");
+        if (meta && !meta.querySelector(".msg-edited")) {
+          const editedNode = document.createElement("span");
+          editedNode.className = "msg-edited";
+          editedNode.textContent = "已编辑";
+          meta.append(editedNode);
+        }
+      }
+
+      function updateRecallButtonExpiry() {
+        const now = Date.now();
+
+        el.messages.querySelectorAll(".recall-button").forEach((button) => {
+          const expiresAt = Number(button.dataset.expiresAt);
+          if (Number.isFinite(expiresAt) && now > expiresAt) {
+            const actions = button.closest(".msg-actions");
+            if (actions) actions.remove();
+          }
+        });
+      }
+
+      function resetPendingRecallButtons() {
+        el.messages.querySelectorAll(".recall-button:disabled").forEach((button) => {
+          button.disabled = false;
+          button.textContent = "撤回";
+        });
+      }
+
+      function clearChatView() {
+        el.messages.querySelectorAll(".msg-row, .system-row").forEach((node) => {
+          node.remove();
+        });
+        state.seenMessageIds.clear();
+        updateEmptyState();
       }
 
       function appendSystemMessage(text, time) {
@@ -2231,26 +2623,28 @@
         }, 2600);
       }
 
-      function getOrCreateClientId() {
+      function readStoredRoom() {
         try {
-          const existing = sessionStorage.getItem(CLIENT_ID_STORAGE_KEY);
-          if (existing) return existing;
-
-          const bytes = new Uint8Array(16);
-          if (window.crypto && typeof window.crypto.getRandomValues === "function") {
-            window.crypto.getRandomValues(bytes);
-          } else {
-            for (let index = 0; index < bytes.length; index += 1) {
-              bytes[index] = Math.floor(Math.random() * 256);
-            }
-          }
-
-          const clientId = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-          sessionStorage.setItem(CLIENT_ID_STORAGE_KEY, clientId);
-          return clientId;
+          const room = localStorage.getItem(ROOM_STORAGE_KEY);
+          return ROOM_NAMES[room] ? room : DEFAULT_ROOM;
         } catch (_) {
-          return `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          return DEFAULT_ROOM;
         }
+      }
+
+      function storeRoom(room) {
+        try {
+          localStorage.setItem(ROOM_STORAGE_KEY, room);
+        } catch (_) {
+          /* 无法持久化房间选择时不影响本次聊天。 */
+        }
+      }
+
+      function updateRoomLabels() {
+        state.roomName = ROOM_NAMES[state.room] || ROOM_NAMES[DEFAULT_ROOM];
+        el.roomNameSidebar.textContent = state.roomName;
+        el.roomNameHeader.textContent = state.roomName;
+        document.title = `${state.roomName} · 局域网聊天室`;
       }
 
       function readStoredName() {
@@ -2261,12 +2655,41 @@
         }
       }
 
+      function lastMsgStorageKey(room) {
+        return `${LAST_MSG_STORAGE_PREFIX}${room}`;
+      }
+
+      function readLastMsgId(room) {
+        try {
+          return localStorage.getItem(lastMsgStorageKey(room)) || "";
+        } catch (_) {
+          return "";
+        }
+      }
+
+      function storeLastMsgId(room, msgId) {
+        if (!msgId) return;
+        try {
+          localStorage.setItem(lastMsgStorageKey(room), msgId);
+        } catch (_) {
+          /* 无法持久化游标时仍然可以正常聊天。 */
+        }
+      }
+
       function storeName(name) {
         try {
           localStorage.setItem(NAME_STORAGE_KEY, name);
         } catch (_) {
           /* 隐私模式下无法持久化昵称，不影响聊天。 */
         }
+      }
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/service-worker.js").catch(() => {
+            /* 非 HTTPS 的局域网地址不支持 Service Worker，不影响聊天。 */
+          });
+        });
       }
     })();
   </script>
